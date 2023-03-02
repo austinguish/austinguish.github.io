@@ -79,37 +79,32 @@
             <main class="col-md-8">
                     <article class="post">
         <header class="entry-header">
-            <h1 class="entry-title">Hello World</h1>
+            <h1 class="entry-title"></h1>
             <div class="entry-meta">
                 <!-- <span class="post-category"><a href="#">分类名字</a></span> -->
-                <span class="post-date"><a href="#"><time class="entry-date">2023-02-20</time></a></span>
+                <span class="post-date"><a href="#"><time class="entry-date">2023-02-26</time></a></span>
                 <span class="post-author"><a href="#">Yiwei Jiang</a></span>
             </div>
         </header>
         <div class="entry-content clearfix">
-            <p>Welcome to <a target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a>! This is your very
-first post. Check <a target="_blank" rel="noopener" href="https://hexo.io/docs/">documentation</a> for
-more info. If you get any problems when using Hexo, you can find the
-answer in <a
-target="_blank" rel="noopener" href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or
-you can ask me on <a
-target="_blank" rel="noopener" href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
-<h2 id="quick-start">Quick Start</h2>
-<h3 id="create-a-new-post">Create a new post</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
-<p>More info: <a
-target="_blank" rel="noopener" href="https://hexo.io/docs/writing.html">Writing</a></p>
-<h3 id="run-server">Run server</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/server.html">Server</a></p>
-<h3 id="generate-static-files">Generate static files</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-<p>More info: <a
-target="_blank" rel="noopener" href="https://hexo.io/docs/generating.html">Generating</a></p>
-<h3 id="deploy-to-remote-sites">Deploy to remote sites</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-<p>More info: <a
-target="_blank" rel="noopener" href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
+            <h1 id="递推方程的求解">递推方程的求解</h1>
+<p>汉诺塔</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Hanoi(A,C,n)</span><br><span class="line">	if n = 1 then move(A,C)</span><br><span class="line">	else Hanoi(A,B,n-1)</span><br><span class="line">			 move(A,C,1)</span><br><span class="line">			 Hanoi(B,C,n-1)</span><br></pre></td></tr></table></figure>
+<p>递归的先把前（1,n-1) 放在中间的tmp上，然后把第n个放到c，
+再递归的把中间的n-1个盘子放到C.</p>
+<p><span class="math inline">\(T(n) = 2T(n-1)+1\)</span> <span
+class="math inline">\(T(1) = 1\)</span> <span class="math display">\[
+T(n) = 2T(n-1)+1\\
+T(n) = 2(2T(n-2)+1)+1 = 2^2T(n-2)+3\\
+T(n) = 2(2(2T(n-3)+1)+1)+1 = 2^3T(n-3)+7\\
+T(n) = 2(2(2(2T(n-4)+1)+1)+1)+1 = 2^4T(n-4)+15\\
+T(n) = 2^{n-1}+2^{n-1}-1 = 2^n -1
+\]</span> 不断带入迭代就好 <span class="math inline">\(T(1) =
+T(n-(n-1))\)</span> 所以最后一个递推方程是第<span
+class="math inline">\((n-1)\)</span> 个方程</p>
+<p>递归树 <span class="math display">\[
+C(n) = 2C(n/4)+n^2; C(1) = 1
+\]</span></p>
 
         </div>
     </article>

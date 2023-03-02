@@ -79,37 +79,108 @@
             <main class="col-md-8">
                     <article class="post">
         <header class="entry-header">
-            <h1 class="entry-title">Hello World</h1>
+            <h1 class="entry-title"></h1>
             <div class="entry-meta">
                 <!-- <span class="post-category"><a href="#">分类名字</a></span> -->
-                <span class="post-date"><a href="#"><time class="entry-date">2023-02-20</time></a></span>
+                <span class="post-date"><a href="#"><time class="entry-date">2023-02-24</time></a></span>
                 <span class="post-author"><a href="#">Yiwei Jiang</a></span>
             </div>
         </header>
         <div class="entry-content clearfix">
-            <p>Welcome to <a target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a>! This is your very
-first post. Check <a target="_blank" rel="noopener" href="https://hexo.io/docs/">documentation</a> for
-more info. If you get any problems when using Hexo, you can find the
-answer in <a
-target="_blank" rel="noopener" href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or
-you can ask me on <a
-target="_blank" rel="noopener" href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
-<h2 id="quick-start">Quick Start</h2>
-<h3 id="create-a-new-post">Create a new post</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
-<p>More info: <a
-target="_blank" rel="noopener" href="https://hexo.io/docs/writing.html">Writing</a></p>
-<h3 id="run-server">Run server</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/server.html">Server</a></p>
-<h3 id="generate-static-files">Generate static files</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-<p>More info: <a
-target="_blank" rel="noopener" href="https://hexo.io/docs/generating.html">Generating</a></p>
-<h3 id="deploy-to-remote-sites">Deploy to remote sites</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-<p>More info: <a
-target="_blank" rel="noopener" href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
+            <h1 id="lsm-tree-design">LSM-Tree Design</h1>
+<h2 id="memtable">Memtable</h2>
+<h3 id="data-structure">Data-Structure</h3>
+<p>SkipList &lt;key int64,value string&gt;;</p>
+<h2 id="sstable">SSTable</h2>
+<table>
+<colgroup>
+<col style="width: 38%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 4%" />
+<col style="width: 5%" />
+<col style="width: 5%" />
+<col style="width: 5%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Header</th>
+<th>Bloomfilter</th>
+<th>key1,offset</th>
+<th>key2,offset</th>
+<th>...</th>
+<th>value</th>
+<th>value</th>
+<th>value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Timestamp(uint64),size, min,max.</td>
+<td>Murmur3-&gt;4</td>
+<td>Index</td>
+<td>Index</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="compaction">Compaction</h2>
+<p>When the MemTable data in memory reaches a threshold (i.e., when the
+size of the data after being converted to SSTable exceeds 2MB), the data
+in the MemTable needs to be written to disk. During the writing process,
+the data in the MemTable is first sorted by key and then written to disk
+as an SSTable file.</p>
+<p>The SSTable file is directly written to Level 0 on the hard disk. If
+the number of files in Level 0 exceeds the limit, a merge operation is
+performed. For the merge operation in Level 0, all SSTable files in
+Level 0 and some SSTable files in the middle of Level 1 need to be
+merged, and the resulting new SSTable file is written to Level 1.</p>
+<h2 id="put">Put</h2>
+<p>For the PUT operation, the system first attempts to insert the data
+into the MemTable. Since the MemTable uses a skip list to maintain data,
+if there is already a record with key K in the MemTable, the existing
+record is replaced instead of inserting a new record. At the same time,
+if the data size in the MemTable exceeds the MemTable limit after
+inserting or replacing the data (note that this refers to the size of
+the data after it is converted to SSTable and exceeds 2MB), the system
+temporarily suspends inserting or replacing the data and converts the
+data in the MemTable to an SSTable, which is then saved in Level 0. If
+the number of files in Level 0 exceeds the limit, a merge operation will
+be performed, following the method described earlier. After these
+operations are completed, the system will insert the data with key
+K.</p>
+<h2 id="get">Get</h2>
+<p>For the GET operation, the system first searches for the record with
+key K in the MemTable. If the record is found in the MemTable, the
+operation ends.</p>
+<p>If the key K is not found in the MemTable, the system then searches
+through each cached SSTable layer in memory layer by layer. It uses the
+Bloom Filter to determine if K may exist in the current SSTable, and if
+it is possible, it uses binary search to find the corresponding offset
+in the index, and then reads the corresponding file from the hard disk
+and retrieves the value according to the offset. If the system searches
+through all the layers and cannot find the key K, it means that the key
+does not exist.</p>
+<h2 id="delete">Delete</h2>
+<p>Since we cannot modify the contents of an SSTable, we need a special
+way to handle the delete operation of key-value pairs. First, we search
+for the key K in the MemTable. If the record is found, we delete it.
+However, this is not enough because even if the key K is not found in
+the MemTable, it may still exist in an SSTable. Therefore, regardless of
+whether the key K is found and deleted in the MemTable or not, we need
+to insert a special record into the MemTable to indicate that the key K
+has been deleted. We call this special record a "delete marker", with
+the key K and the value as the special string "<del>DELETED</del>" (this
+value will not appear in a normal record in our tests). When a read
+operation encounters a "delete marker", it means that the key has been
+deleted. During the merge operation, multiple records with the same key
+are merged based on the timestamp, and usually there is no need to
+handle "delete markers" separately. The only exception is that when
+merging in the last layer, all "delete markers" should be deleted.</p>
 
         </div>
     </article>
